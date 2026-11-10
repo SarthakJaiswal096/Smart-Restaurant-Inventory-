@@ -1,0 +1,7 @@
+6
+1 Chicken_Biryani 250 1
+2 Veg_Pulao 180 1
+3 Paneer_Butter_Masala 280 1
+4 Butter_Naan 40 1
+5 Dal_Tadka 150 1
+6 Masala_Chai 30 1

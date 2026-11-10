@@ -1,0 +1,11 @@
+10
+1 Rice g 5000 90
+2 Chicken g 3000 220
+3 Paneer g 2000 320
+4 Butter g 500 500
+5 Wheat_Flour g 3000 45
+6 Toor_Dal g 2000 130
+7 Mixed_Vegetables g 2000 60
+8 Milk ml 3000 56
+9 Onion g 3000 35
+10 Tomato g 2000 40
