@@ -1,5 +1,0 @@
-2026-11-06 inventory logged_in
-2026-11-06 inventory viewed_report
-2026-11-06 inventory viewed_report
-2026-11-10 admin logged_in
-2026-11-10 admin logged_out
