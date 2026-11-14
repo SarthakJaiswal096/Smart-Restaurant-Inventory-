@@ -1,0 +1,5 @@
+1|Basmati_Rice|g|2000|120
+2|Paneer|g|1000|380
+3|Chicken|g|1500|280
+4|Butter|g|500|500
+5|Black_Lentils|g|1000|140
