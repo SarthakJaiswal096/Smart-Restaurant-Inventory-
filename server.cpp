@@ -171,22 +171,22 @@ int main()
         res.set_content("{\"ok\":true,\"id\":" + to_string(oid) + "}", "application/json");
     });
 
-    svr.Post("/api/order/confirmNext", [](const httplib::Request&, httplib::Response& res)
+    svr.Post("/api/order/confirmNext", [&](const httplib::Request&, httplib::Response& res)
     {
-        int id = orderManager.confirmNext();
+        int id = orderManager.confirmNext(recipeBook, inventory, today);
         files.save(menu, orderManager, recipeBook, inventory);
-        res.set_content(id == -1 ? "{\"ok\":false,\"error\":\"No pending order\"}" : "{\"ok\":true}", "application/json");
+        res.set_content(id == -1 ? "{\"ok\":false,\"error\":\"No pending order or insufficient stock\"}" : "{\"ok\":true}", "application/json");
     });
 
-    svr.Post("/api/order/action", [](const httplib::Request& req, httplib::Response& res)
+    svr.Post("/api/order/action", [&](const httplib::Request& req, httplib::Response& res)
     {
         int id = getParam(req, "id");
         string act = req.has_param("act") ? req.get_param_value("act") : "";
-        bool ok = (act == "confirm") ? orderManager.confirmOrder(id) : orderManager.cancelOrder(id);
+        bool ok = (act == "confirm") ? orderManager.confirmOrder(id, recipeBook, inventory, today) : orderManager.cancelOrder(id);
         files.save(menu, orderManager, recipeBook, inventory);
-        res.set_content(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Action failed\"}", "application/json");
+        res.set_content(ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"Action failed or insufficient stock\"}", "application/json");
     });
-
+    
     svr.Post("/api/recipe/add", [](const httplib::Request& req, httplib::Response& res)
     {
         recipeBook.addRecipe(getParam(req, "foodId"), getParam(req, "ingId"), getParam(req, "qty"));
