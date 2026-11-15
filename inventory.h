@@ -80,7 +80,7 @@ public:
         return top == -1; 
     }
     void push(Batch b) { 
-        if (top < 199) 
+        if (top < 199){ 
             data[++top] = b; 
     }
     Batch pop() { 
