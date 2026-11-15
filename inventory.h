@@ -35,8 +35,7 @@ public:
         if (size == 500) return;
         int i = size++;
         data[i] = b;
-        while (i > 0)
-        {
+        while (i > 0){
             int parent = (i - 1) / 2;
             if (data[parent].expiry <= data[i].expiry) break;
             Batch temp = data[parent];
