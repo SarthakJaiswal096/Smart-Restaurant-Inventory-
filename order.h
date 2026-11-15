@@ -2,6 +2,8 @@
 #define ORDER_H
 
 #include "models.h"
+#include "recipe.h"
+#include "inventory.h"
 
 class OrderCircularQueue
 {
@@ -10,24 +12,11 @@ private:
     int front, rear, count;
 
 public:
-    OrderCircularQueue()
-    {
-        front = 0;
-        rear = 0;
-        count = 0;
-    }
-    bool empty() { 
-        return count == 0; 
-    }
-    int size() { 
-        return count; 
-    }
-    void clear()
-    {
-        front = 0;
-        rear = 0;
-        count = 0;
-    }
+    OrderCircularQueue() { front = rear = count = 0; }
+    bool empty() { return count == 0; }
+    int size() { return count; }
+    void clear() { front = rear = count = 0; }
+
     void push(int orderId)
     {
         if (count == 200) return;
@@ -35,6 +24,7 @@ public:
         rear = (rear + 1) % 200;
         count++;
     }
+
     int pop()
     {
         if (empty()) return -1;
@@ -52,10 +42,43 @@ private:
     OrderCircularQueue queue;
     int nextId;
 
-public:
-    OrderManager() { 
-        nextId = 1001;
+    // Calculates total ingredients for the order and consumes them in FIFO order
+    bool consumeOrderFIFO(Order& o, RecipeBook& recipes, Inventory& inv, int today)
+    {
+        DemandHashTable need;
+        vector<OrderLine>& lines = o.getItems();
+        vector<RecipeItem>& recs = recipes.getRecipes();
+
+        for (int i = 0; i < (int)lines.size(); i++)
+            for (int k = 0; k < (int)recs.size(); k++)
+                if (recs[k].foodId == lines[i].foodId)
+                    need.add(recs[k].ingredientId, recs[k].quantity * lines[i].quantity);
+
+        vector<Ingredient>& ings = inv.getIngredients();
+        // Step 1: Verify ALL ingredients have enough non-expired stock before deducting anything
+        for (int i = 0; i < (int)ings.size(); i++)
+        {
+            int id = ings[i].getId();
+            int req = need.get(id);
+            if (req > 0 && inv.getUsableStock(id, today) < req)
+            {
+                cout << "Cannot confirm: not enough usable " << ings[i].getName() << ".\n";
+                return false;
+            }
+        }
+
+        // Step 2: Deduct each ingredient in FIFO order
+        for (int i = 0; i < (int)ings.size(); i++)
+        {
+            int id = ings[i].getId();
+            int req = need.get(id);
+            if (req > 0) inv.useStockFIFO(id, req, today);
+        }
+        return true;
     }
+
+public:
+    OrderManager() { nextId = 1001; }
 
     int placeOrder(vector<OrderLine>& items, int today)
     {
@@ -67,7 +90,7 @@ public:
         return nextId++;
     }
 
-    int confirmNext()
+    int confirmNext(RecipeBook& recipes, Inventory& inv, int today)
     {
         while (!queue.empty())
         {
@@ -76,8 +99,13 @@ public:
             {
                 if (orders[i].getId() == id && orders[i].getStatus() == "PENDING")
                 {
+                    if (!consumeOrderFIFO(orders[i], recipes, inv, today))
+                    {
+                        queue.push(id); // Keep in queue if stock is short
+                        return -1;
+                    }
                     orders[i].setStatus("CONFIRMED");
-                    cout << "Order " << id << " confirmed.\n";
+                    cout << "Order " << id << " confirmed and stock deducted (FIFO).\n";
                     return id;
                 }
             }
@@ -86,14 +114,15 @@ public:
         return -1;
     }
 
-    bool confirmOrder(int id)
+    bool confirmOrder(int id, RecipeBook& recipes, Inventory& inv, int today)
     {
         for (int i = 0; i < (int)orders.size(); i++)
         {
             if (orders[i].getId() == id && orders[i].getStatus() == "PENDING")
             {
+                if (!consumeOrderFIFO(orders[i], recipes, inv, today)) return false;
                 orders[i].setStatus("CONFIRMED");
-                cout << "Order confirmed.\n";
+                cout << "Order confirmed and stock deducted (FIFO).\n";
                 return true;
             }
         }
@@ -120,10 +149,8 @@ public:
     {
         cout << "\n----- ORDERS -----\n";
         for (int i = 0; i < (int)orders.size(); i++)
-        {
             cout << "Order " << orders[i].getId() << " | " << orders[i].getStatus()
                  << " | " << orders[i].getDate() << "\n";
-        }
     }
 
     vector<Order>& getOrders() { return orders; }
@@ -135,10 +162,8 @@ public:
         nextId = 1001;
         for (int i = 0; i < (int)orders.size(); i++)
         {
-            if (orders[i].getId() >= nextId) 
-                nextId = orders[i].getId() + 1;
-            if (orders[i].getStatus() == "PENDING") 
-                queue.push(orders[i].getId());
+            if (orders[i].getId() >= nextId) nextId = orders[i].getId() + 1;
+            if (orders[i].getStatus() == "PENDING") queue.push(orders[i].getId());
         }
     }
 };
