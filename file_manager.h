@@ -15,29 +15,31 @@ public:
     {
         ofstream foodFile("data/foods.txt");
         vector<Food>& foods = menu.getFoods();
-        for (int i = 0; i < (int)foods.size(); i++)
+        for (int i = 0; i < (int)foods.size(); i++){
             foodFile << foods[i].getId() << "|" << foods[i].getName() << "|" << foods[i].getPrice() << "\n";
+        }
         foodFile.close();
 
         ofstream recipeFile("data/recipes.txt");
         vector<RecipeItem>& recipeList = recipes.getRecipes();
-        for (int i = 0; i < (int)recipeList.size(); i++)
+        for (int i = 0; i < (int)recipeList.size(); i++){
             recipeFile << recipeList[i].foodId << "|" << recipeList[i].ingredientId << "|" << recipeList[i].quantity << "\n";
+        }
         recipeFile.close();
 
         ofstream ingredientFile("data/ingredients.txt");
         vector<Ingredient>& ingredients = inventory.getIngredients();
-        for (int i = 0; i < (int)ingredients.size(); i++)
-            ingredientFile << ingredients[i].getId() << "|" << ingredients[i].getName() << "|"
-                           << ingredients[i].getUnit() << "|" << ingredients[i].getMinimumStock() << "|"
+        for (int i = 0; i < (int)ingredients.size(); i++){
+            ingredientFile << ingredients[i].getId() << "|" << ingredients[i].getName() << "|"<< ingredients[i].getUnit() << "|" << ingredients[i].getMinimumStock() << "|"
                            << ingredients[i].getCostPerUnit() << "\n";
+        }
         ingredientFile.close();
 
         ofstream batchFile("data/batches.txt");
         vector<Batch>& batches = inventory.getBatches();
-        for (int i = 0; i < (int)batches.size(); i++)
-            batchFile << batches[i].id << "|" << batches[i].ingredientId << "|"
-                      << batches[i].quantity << "|" << batches[i].expiry << "\n";
+        for (int i = 0; i < (int)batches.size(); i++){
+            batchFile << batches[i].id << "|" << batches[i].ingredientId << "|"<< batches[i].quantity << "|" << batches[i].expiry << "\n";
+        }
         batchFile.close();
 
         ofstream orderFile("data/orders.txt");
@@ -47,17 +49,18 @@ public:
             orderFile << allOrders[i].getId() << "|" << allOrders[i].getStatus() << "|" << allOrders[i].getDate() << "|";
             vector<OrderLine>& lines = allOrders[i].getItems();
             orderFile << lines.size();
-            for (int j = 0; j < (int)lines.size(); j++)
+            for (int j = 0; j < (int)lines.size(); j++){
                 orderFile << "|" << lines[j].foodId << "|" << lines[j].quantity;
+            }
             orderFile << "\n";
         }
         orderFile.close();
 
         ofstream transactionFile("data/transactions.txt");
         vector<StockTransaction>& log = inventory.getTransactions();
-        for (int i = 0; i < (int)log.size(); i++)
-            transactionFile << log[i].type << "|" << log[i].ingredientId << "|" << log[i].quantity << "|"
-                            << log[i].date << "|" << log[i].note << "\n";
+        for (int i = 0; i < (int)log.size(); i++){
+            transactionFile << log[i].type << "|" << log[i].ingredientId << "|" << log[i].quantity << "|"<< log[i].date << "|" << log[i].note << "\n";
+        }
         transactionFile.close();
         cout << "All data saved in the data folder.\n";
     }
@@ -79,8 +82,11 @@ public:
         {
             stringstream s(line);
             string id, name, price;
-            getline(s, id, '|'); getline(s, name, '|'); getline(s, price, '|');
-            if (id != "") menu.addFood(stoi(id), name, stoi(price));
+            getline(s, id, '|'); 
+            getline(s, name, '|'); 
+            getline(s, price, '|');
+            if (id != "") 
+                menu.addFood(stoi(id), name, stoi(price));
         }
         foodFile.close();
 
@@ -89,9 +95,13 @@ public:
         {
             stringstream s(line);
             string id, name, unit, minimum, cost;
-            getline(s, id, '|'); getline(s, name, '|'); getline(s, unit, '|');
-            getline(s, minimum, '|'); getline(s, cost, '|');
-            if (id != "") inventory.addIngredient(stoi(id), name, unit, stoi(minimum), stoi(cost));
+            getline(s, id, '|'); 
+            getline(s, name, '|'); 
+            getline(s, unit, '|');
+            getline(s, minimum, '|'); 
+            getline(s, cost, '|');
+            if (id != "") 
+                inventory.addIngredient(stoi(id), name, unit, stoi(minimum), stoi(cost));
         }
         ingredientFile.close();
 
@@ -100,8 +110,12 @@ public:
         {
             stringstream s(line);
             string id, g, q, e;
-            getline(s, id, '|'); getline(s, g, '|'); getline(s, q, '|'); getline(s, e, '|');
-            if (id != "") inventory.getBatches().push_back(Batch(stoi(id), stoi(g), stoi(q), stoi(e)));
+            getline(s, id, '|'); 
+            getline(s, g, '|'); 
+            getline(s, q, '|'); 
+            getline(s, e, '|');
+            if (id != "") 
+                inventory.getBatches().push_back(Batch(stoi(id), stoi(g), stoi(q), stoi(e)));
         }
         batchFile.close();
 
@@ -110,8 +124,11 @@ public:
         {
             stringstream s(line);
             string f, g, q;
-            getline(s, f, '|'); getline(s, g, '|'); getline(s, q, '|');
-            if (f != "") recipes.addRecipe(stoi(f), stoi(g), stoi(q));
+            getline(s, f, '|'); 
+            getline(s, g, '|'); 
+            getline(s, q, '|');
+            if (f != "") 
+                recipes.addRecipe(stoi(f), stoi(g), stoi(q));
         }
         recipeFile.close();
 
@@ -121,15 +138,20 @@ public:
         {
             stringstream s(line);
             string id, status, date, count;
-            getline(s, id, '|'); getline(s, status, '|'); getline(s, date, '|'); getline(s, count, '|');
-            if (id == "") continue;
+            getline(s, id, '|'); 
+            getline(s, status, '|'); 
+            getline(s, date, '|'); 
+            getline(s, count, '|');
+            if (id == "") 
+                continue;
             Order order(stoi(id), stoi(date));
             order.setStatus(status);
             int number = stoi(count);
             for (int i = 0; i < number; i++)
             {
                 string food, qty;
-                getline(s, food, '|'); getline(s, qty, '|');
+                getline(s, food, '|'); 
+                getline(s, qty, '|');
                 order.addFood(stoi(food), stoi(qty));
             }
             loadedOrders.push_back(order);
@@ -143,9 +165,13 @@ public:
         {
             stringstream s(line);
             string type, id, qty, date, note;
-            getline(s, type, '|'); getline(s, id, '|'); getline(s, qty, '|');
-            getline(s, date, '|'); getline(s, note, '|');
-            if (type != "") loadedLog.push_back(StockTransaction(type, stoi(id), stoi(qty), stoi(date), note));
+            getline(s, type, '|'); 
+            getline(s, id, '|'); 
+            getline(s, qty, '|');
+            getline(s, date, '|'); 
+            getline(s, note, '|');
+            if (type != "") 
+                loadedLog.push_back(StockTransaction(type, stoi(id), stoi(qty), stoi(date), note));
         }
         transactionFile.close();
         inventory.setTransactions(loadedLog);
