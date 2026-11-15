@@ -1,4 +1,4 @@
-# Smart Restaurant Food Inventory System
+# Smart Restaurant Food Inventory System(console based )(website is just to showcase it)
 
 A C++ program that manages a restaurant's menu, recipes, customer orders and ingredient stock. It runs as a console app (`main.cpp`) and as a web dashboard (`server.cpp` + `website/`). Both use the same logic and the same data files.
 
@@ -25,11 +25,7 @@ A C++ program that manages a restaurant's menu, recipes, customer orders and ing
 
 ## How to run
 
-- Console: double-click `run_console.bat`.
-- Web dashboard: double-click `run_web.bat`. It compiles `server.cpp` (which uses `httplib.h` from the same folder) and opens `http://localhost:8080`.
-- Module test programs: double-click `run_modules.bat` and pick a module.
-- `website/index.html` also connects to the running server when it is opened directly from disk; with no server running it falls back to a browser-only preview.
-- Always start the program from the project folder, because the `data/` path is relative.
+- Console: run with main.cpp
 
 Demo accounts:
 
