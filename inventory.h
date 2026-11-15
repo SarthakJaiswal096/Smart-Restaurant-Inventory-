@@ -8,8 +8,11 @@ int inventoryDateNumber(int date)
     int year = date / 10000, month = (date / 100) % 100, day = date % 100;
     int total = year * 365 + year / 4 - year / 100 + year / 400;
     int monthDays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    if (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) monthDays[1] = 29;
-    for (int i = 0; i < month - 1; i++) total += monthDays[i];
+    if (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)) 
+        monthDays[1] = 29;
+    for (int i = 0; i < month - 1; i++) {
+        total += monthDays[i];
+    }
     return total + day;
 }
 
@@ -20,8 +23,12 @@ private:
     int size;
 
 public:
-    BatchMinHeap() { size = 0; }
-    bool empty() { return size == 0; }
+    BatchMinHeap() { 
+        size = 0; 
+    }
+    bool empty() { 
+        return size == 0; 
+    }
 
     void insert(Batch b)
     {
@@ -67,10 +74,19 @@ private:
     int top;
 
 public:
-    StockUndoStack() { top = -1; }
-    bool empty() { return top == -1; }
-    void push(Batch b) { if (top < 199) data[++top] = b; }
-    Batch pop() { return empty() ? Batch() : data[top--]; }
+    StockUndoStack() { 
+        top = -1; 
+    }
+    bool empty() { 
+        return top == -1; 
+    }
+    void push(Batch b) { 
+        if (top < 199) 
+            data[++top] = b; 
+    }
+    Batch pop() { 
+        return empty() ? Batch() : data[top--]; 
+    }
 };
 
 class Inventory
@@ -249,11 +265,21 @@ public:
         return false;
     }
 
-    vector<Ingredient>& getIngredients() { return ingredients; }
-    vector<Batch>& getBatches() { return batches; }
-    vector<StockTransaction>& getTransactions() { return transactions; }
-    void setTransactions(vector<StockTransaction>& v) { transactions = v; }
-    void rebuildUndo() { undo = StockUndoStack(); }
+    vector<Ingredient>& getIngredients() { 
+        return ingredients; 
+    }
+    vector<Batch>& getBatches(){ 
+        return batches; 
+    }
+    vector<StockTransaction>& getTransactions() { 
+        return transactions; 
+    }
+    void setTransactions(vector<StockTransaction>& v) { 
+        transactions = v; 
+    }
+    void rebuildUndo() { 
+        undo = StockUndoStack(); 
+    }
 };
 
 #endif
