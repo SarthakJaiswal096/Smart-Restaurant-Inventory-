@@ -269,39 +269,3 @@ Dashboard tabs: Overview, Food Menu, Orders, Recipes, Inventory, Reports.
 | 0 | Save and exit | All |
 
 Reports sub-menu: 1 Sales per day, 2 Sales per food, 3 Stock value, 4 Expiry report, 5 Low stock report, 6 Wastage report.
-
-## Web API
-
-All routes are in `server.cpp`. Values are sent in the URL query, for example `?foodId=2&qty=3` (a form body also works). Every change is saved to `data/` straight away. Wrong input gives `{"ok":false,"error":"..."}`: unknown food or ingredient, duplicate id, quantity of 0 or less, a non-numeric value, an unknown route (404) or the wrong method (405).
-
-| Route | Parameters | What it does |
-|---|---|---|
-| `POST /api/login` | `user`, `pass` | Returns the role if the login is correct |
-| `GET /api/state` | none | Returns all data for the dashboard as JSON, including `sales` (plates and money per dish, best seller first) |
-| `POST /api/food/add` | `id`, `name`, `price` | Adds a dish |
-| `POST /api/order/place` | `foodId`, `qty` | Places an order |
-| `POST /api/order/confirmNext` | none | Confirms the oldest waiting order |
-| `POST /api/order/action` | `id`, `act` (`confirm` or `cancel`) | Confirms or cancels one order |
-| `POST /api/recipe/add` | `foodId`, `ingId`, `qty` | Adds a recipe row |
-| `POST /api/ingredient/add` | `id`, `name`, `unit`, `min`, `cost` | Adds an ingredient |
-| `POST /api/stock/receive` | `batchId`, `ingId`, `qty`, `expiry` | Receives a batch |
-| `POST /api/stock/use` | `ingId`, `qty` | Uses stock |
-| `POST /api/stock/waste` | `ingId`, `qty`, `note` | Records wastage |
-| `POST /api/stock/expire` | none | Writes off expired stock |
-| `POST /api/stock/undo` | none | Undoes the last received batch |
-
-## Module test programs (`modules/`)
-
-Each file tests one module of the project. Compile from the project folder with `-I.` (or use `run_modules.bat`).
-
-| File | Module | Uses | Matches the project because |
-|---|---|---|---|
-| `recipe_menu_demo.cpp` | Menu and recipes | self-contained | Same sorted menu, binary search, recipe rows and demand totals as `menu.h` / `recipe.h` |
-| `order_system.cpp` | Orders | self-contained | Same order ids, circular-queue FIFO order and status changes as `order.h`. The project version also deducts stock when an order is confirmed |
-| `in.cpp` | Inventory | `inventory.h` | Rebuilt from the supplied `in.exe` (source was not available); same menu and messages |
-| `in.exe` | Inventory | prebuilt | Your original compiled program, kept as supplied |
-| `report1.cpp` | Reports | `report.h`, `file_manager.h` | Loads the `data/` files first, then shows the same 6 reports as `main.cpp` |
-
-## Known note about the data
-
-Ingredient costs in `data/ingredients.txt` look like prices per kg while the stock is counted in grams, so the Stock Value report shows very large numbers (for example Rs. 2538000). The calculation is correct for the data as entered; change the cost per unit (or the unit) if you want realistic values.
