@@ -16,8 +16,12 @@ public:
         rear = 0;
         count = 0;
     }
-    bool empty() { return count == 0; }
-    int size() { return count; }
+    bool empty() { 
+        return count == 0; 
+    }
+    int size() { 
+        return count; 
+    }
     void clear()
     {
         front = 0;
@@ -49,7 +53,9 @@ private:
     int nextId;
 
 public:
-    OrderManager() { nextId = 1001; }
+    OrderManager() { 
+        nextId = 1001;
+    }
 
     int placeOrder(vector<OrderLine>& items, int today)
     {
@@ -129,8 +135,10 @@ public:
         nextId = 1001;
         for (int i = 0; i < (int)orders.size(); i++)
         {
-            if (orders[i].getId() >= nextId) nextId = orders[i].getId() + 1;
-            if (orders[i].getStatus() == "PENDING") queue.push(orders[i].getId());
+            if (orders[i].getId() >= nextId) 
+                nextId = orders[i].getId() + 1;
+            if (orders[i].getStatus() == "PENDING") 
+                queue.push(orders[i].getId());
         }
     }
 };
