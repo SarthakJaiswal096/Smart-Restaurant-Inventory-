@@ -1,6 +1,6 @@
-# Smart Restaurant Food Inventory System(console based )(website is just to showcase it)
+# Smart Restaurant Food Inventory System(console based )
 
-A C++ program that manages a restaurant's menu, recipes, customer orders and ingredient stock. It runs as a console app (`main.cpp`) and as a web dashboard (`server.cpp` + `website/`). Both use the same logic and the same data files.
+A C++ program that manages a restaurant's menu, recipes, customer orders and ingredient stock. It runs as a console app (`main.cpp`) 
 
 ## Project files
 
@@ -16,16 +16,12 @@ A C++ program that manages a restaurant's menu, recipes, customer orders and ing
 | `login.h` | `LoginManager`: the three user accounts |
 | `main.cpp` | Console program |
 | `server.cpp`, `httplib.h` | Web server and its small HTTP library |
-| `website/` | `index.html`, `styles.css`, `app.js` (the dashboard) |
 | `data/` | Text files holding the saved data |
-| `run_console.bat`, `run_web.bat` | Compile and start each version |
-| `modules/` | One small test program per module (menu and recipes, orders, inventory, reports) |
-| `run_modules.bat` | Compile and start the module test programs |
-| `tests/run_tests.sh` | Automatic build and smoke test (Linux, macOS or Git Bash) |
+
 
 ## How to run
 
-- Console: run with main.cpp
+- Console: run with g++ main.cpp && .\a.exe
 
 Demo accounts:
 
@@ -193,46 +189,6 @@ Files in `data/`: `foods.txt`, `ingredients.txt`, `batches.txt`, `recipes.txt`, 
 | `showReports(today)` | Reports sub-menu |
 | `getTodayDate()` | Reads the system clock as a `YYYYMMDD` number |
 
-### server.cpp and httplib.h
-
-`server.cpp`
-
-| Function | What it does |
-|---|---|
-| `main()` | Loads the data, registers all routes, starts the server on port 8080 |
-| `getToday()` | Today's date as a `YYYYMMDD` number (read again on every request) |
-| `getParam(req, key, default)` | Reads a whole number from the request, or returns the default. A non-number gives a clear error |
-| `getText(req, key, default)` | Reads text and removes characters that would break the data files or the JSON (`\|`, quotes, `<`, `>`) |
-| `jsonEsc(text)` | Makes any text safe inside a JSON string |
-| `errorJson(message)` | Builds `{"ok":false,"error":"..."}` |
-
-`httplib.h` (the link between the C++ code and the `website/` folder)
-
-| Function | What it does |
-|---|---|
-| `Request::has_param(key)`, `get_param_value(key)` | Check for and read a request parameter. Values come from the URL query and from a form body |
-| `Request::has_header(key)` | Check for a request header (names are lower case) |
-| `Response::set_content(body, type)`, `set_header(key, value)` | Set what is sent back |
-| `Server::set_mount_point(url, folder)` | Serves static files, here the `website/` folder. `/` opens `index.html`; `..` in a path is refused |
-| `Server::Get(path, handler)`, `Post(path, handler)` | Register a route |
-| `Server::listen(host, port)` | Accepts one request at a time. Sends the right status line, `Content-Length` and CORS header. An error inside a handler becomes a JSON error reply, not a crash. Idle browser connections time out after 1 second |
-
-### website/app.js
-
-| Function | What it does |
-|---|---|
-| `sync()` | Fetches `/api/state` and refreshes the page |
-| `render()` | Draws the tables, numbers and cards |
-| `postApi(url)` | Sends a POST request, then refreshes |
-| `showAlert(message, ok)` | Shows a success or error message |
-| `esc(text)` | Escapes text before it is put into the page |
-| `dayNumber(date)` | Converts `YYYYMMDD` to a day number (same idea as `inventoryDateNumber`) |
-| `quickOrder(foodId)` | Places an order for one plate of a dish |
-| `orderAct(id, act)` | Confirms or cancels an order |
-
-Dashboard tabs: Overview, Food Menu, Orders, Recipes, Inventory, Reports.
-
----
 
 ## Console menu
 
