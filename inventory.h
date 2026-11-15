@@ -117,6 +117,28 @@ public:
         cout << "Batch added.\n";
         return true;
     }
+    // FIFO (First-In, First-Out): consumes the oldest non-expired batch in the vector first
+    bool useStockFIFO(int ingredientId, int quantity, int today)
+    {
+        if (quantity <= 0 || getUsableStock(ingredientId, today) < quantity)
+        {
+            cout << "Not enough usable stock. Expired batches are skipped.\n";
+            return false;
+        }
+        int original = quantity;
+        for (int i = 0; i < (int)batches.size() && quantity > 0; i++)
+        {
+            if (batches[i].ingredientId == ingredientId && batches[i].quantity > 0 && batches[i].expiry >= today)
+            {
+                int take = (batches[i].quantity > quantity) ? quantity : batches[i].quantity;
+                batches[i].quantity -= take;
+                quantity -= take;
+            }
+        }
+        transactions.push_back(StockTransaction("USED", ingredientId, original, today, "FIFO order confirm"));
+        cout << "Stock consumed in FIFO order.\n";
+        return true;
+    }
 
     Ingredient* findIngredient(int id)
     {
