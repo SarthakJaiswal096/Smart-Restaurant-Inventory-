@@ -202,11 +202,11 @@ int main()
         }
         else if (choice == 4 && role != "STOCK_FILLER") placeOrder(today);
         else if (choice == 5 && role != "STOCK_FILLER") orderManager.showOrders();
-        else if (choice == 6 && role != "STOCK_FILLER") orderManager.confirmNext();
+        else if (choice == 6 && role != "STOCK_FILLER") orderManager.confirmNext(recipeBook, inventory, today);
         else if (choice == 7 && role != "STOCK_FILLER")
         {
             int id; cout << "Order ID: "; cin >> id;
-            orderManager.confirmOrder(id);
+            orderManager.confirmOrder(id, recipeBook, inventory, today);
         }
         else if (choice == 8 && role != "STOCK_FILLER")
         {
