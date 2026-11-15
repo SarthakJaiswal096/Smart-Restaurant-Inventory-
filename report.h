@@ -152,10 +152,11 @@ public:
         for (int i = 0; i < (int)batches.size(); i++)
             if (batches[i].quantity > 0)
             {
-                cout << "Batch " << batches[i].id << " | Ingredient " << batches[i].ingredientId
-                     << " | Qty " << batches[i].quantity << " | Expiry " << batches[i].expiry;
-                if (batches[i].expiry < today) cout << " | EXPIRED";
-                else if (inventoryDateNumber(batches[i].expiry) - inventoryDateNumber(today) <= 7) cout << " | EXPIRING SOON";
+                cout << "Batch " << batches[i].id << " | Ingredient " << batches[i].ingredientId<< " | Qty " << batches[i].quantity << " | Expiry " << batches[i].expiry;
+                if (batches[i].expiry < today) 
+                    cout << " | EXPIRED";
+                else if (inventoryDateNumber(batches[i].expiry) - inventoryDateNumber(today) <= 7) 
+                    cout << " | EXPIRING SOON";
                 cout << "\n";
             }
     }
@@ -182,8 +183,7 @@ public:
         {
             int usable = inventory->getUsableStock(items[i].getId(), today);
             if (usable < items[i].getMinimumStock())
-                cout << items[i].getName() << " | Current usable stock: " << usable
-                     << " | Minimum: " << items[i].getMinimumStock() << "\n";
+                cout << items[i].getName() << " | Current usable stock: " << usable<< " | Minimum: " << items[i].getMinimumStock() << "\n";
         }
     }
 };
@@ -204,8 +204,7 @@ public:
         for (int i = 0; i < (int)log.size(); i++)
             if (log[i].type == "WASTAGE" || log[i].type == "EXPIRED")
             {
-                cout << log[i].type << " | Ingredient " << log[i].ingredientId
-                     << " | Qty " << log[i].quantity << " | " << log[i].date << "\n";
+                cout << log[i].type << " | Ingredient " << log[i].ingredientId<< " | Qty " << log[i].quantity << " | " << log[i].date << "\n";
                 total += log[i].quantity;
             }
         cout << "Total wasted quantity: " << total << "\n";
