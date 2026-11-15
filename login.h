@@ -17,8 +17,12 @@ public:
         password = p;
         role = r;
     }
-    bool check(string u, string p) { return username == u && password == p; }
-    string getRole() { return role; }
+    bool check(string u, string p) { 
+        return username == u && password == p; 
+    }
+    string getRole() { 
+        return role; 
+    }
 };
 
 class LoginManager
@@ -36,8 +40,10 @@ public:
 
     string login(string username, string password)
     {
-        for (int i = 0; i < 3; i++)
-            if (users[i].check(username, password)) return users[i].getRole();
+        for (int i = 0; i < 3; i++){
+            if (users[i].check(username, password)) 
+                return users[i].getRole();
+        }
         return "";
     }
 };
