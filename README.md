@@ -302,6 +302,95 @@ Each file tests one module of the project. Compile from the project folder with 
 | `in.exe` | Inventory | prebuilt | Your original compiled program, kept as supplied |
 | `report1.cpp` | Reports | `report.h`, `file_manager.h` | Loads the `data/` files first, then shows the same 6 reports as `main.cpp` |
 
+
+# Order Flow: From Staff Booking to Confirmation
+
+This document explains the step-by-step lifecycle of a customer order in the **Smart Restaurant Inventory System**, from when waitstaff takes an order to when the kitchen confirms it.
+
+---
+
+```
+[ Customer Order ]
+       │
+       ▼
+1. Staff Booking ───► Creates Order Ticket (Items + Quantities)
+       │
+       ▼
+2. Order Queued  ───► Status: PENDING (Saved to Order Queue)
+       │
+       ▼
+3. Kitchen Check ───► Calculates Ingredient Demand from Recipes
+       │
+       ▼
+4. Expiry & Stock Check
+   ├── ❌ Expired Batches or Insufficient Stock ──► REJECTED (Alert shown, Order stays PENDING)
+   │
+   └── ✅ All Ingredients Available & Unexpired
+              │
+              ▼
+5. FEFO Stock Deduction ──► Consumes earliest-expiring batches first
+              │
+              ▼
+6. Confirmation ────────► Status: CONFIRMED (Logged to Transactions & Disk)
+```
+
+---
+
+## Step-by-Step Breakdown
+
+### 1. Order Booking (Staff)
+* **Action**: Staff opens the **Orders** tab (or selects Option 4 in the console).
+* **Input**: Staff selects one or more dishes from the menu and enters quantities (e.g., `2x Butter Chicken`, `1x Garlic Naan`).
+* **Validation**:
+  * Dish IDs and quantities must be valid.
+  * Price and subtotal are calculated automatically.
+
+---
+
+### 2. Queueing the Order
+* **Status**: Assigned a unique **Order ID** with initial status **`PENDING`**.
+* **Storage**: Appended to the active FIFO (First-In, First-Out) Order Queue.
+* **Visibility**: The order appears in the live queue table for kitchen staff to prepare.
+
+---
+
+### 3. Recipe Breakdown & Demand Calculation
+* Before preparing the food, the system looks up each ordered dish in `data/recipes.txt`.
+* Total required ingredients are calculated:
+  $$\text{Total Required Quantity} = \sum (\text{Dish Quantity} \times \text{Ingredient per Dish})$$
+
+---
+
+### 4. Strict Stock & Expiry Verification (Expiry Guard)
+Before an order can be confirmed, the system performs a strict validation against `data/batches.txt`:
+1. **Filters Batches**: Only batches where $\text{Expiry Date} \ge \text{Today}$ are considered usable.
+2. **Evaluates Quantity**: Checks if the sum of all valid, non-expired batches meets or exceeds the required quantity for **every** ingredient in the recipe.
+
+* **If Expired or Insufficient**:
+  * 🚫 Confirmation is **BLOCKED**.
+  * The system raises an explicit alert:
+    > *"Order confirmation rejected! Dish requires Xg of Ingredient, but available unexpired stock is 0g (batches are expired!)."*
+  * The order remains `PENDING` or can be cancelled. No stock is deducted.
+
+* **If Valid Stock Exists**:
+  * The system proceeds to Step 5.
+
+---
+
+### 5. FEFO Stock Deduction (First Expired, First Out)
+When confirmed, stock is deducted using the **FEFO** strategy:
+1. Batches with the **earliest expiry date** are consumed first.
+2. If a batch is fully consumed (reaches 0g), it is cleared out.
+3. If partial quantity is needed, the batch quantity is reduced accordingly.
+4. Total stock figures for the affected ingredients are updated immediately.
+
+---
+
+### 6. Order Confirmation & Audit Logging
+* **Status Transition**: The order status changes from **`PENDING`** $\rightarrow$ **`CONFIRMED`**.
+* **Audit Trail**: An entry is appended to `data/transactions.txt` logging the consumed ingredients, batch IDs, and timestamp.
+* **Persistence**: Updated order and inventory states are saved to disk in `data/orders.txt` and `data/batches.txt`.
+
 ## Known note about the data
 
 Ingredient costs in `data/ingredients.txt` look like prices per kg while the stock is counted in grams, so the Stock Value report shows very large numbers (for example Rs. 2538000). The calculation is correct for the data as entered; change the cost per unit (or the unit) if you want realistic values.
