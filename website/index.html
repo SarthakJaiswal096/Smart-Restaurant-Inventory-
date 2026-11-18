@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Restaurant Food Inventory System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- LOGIN OVERLAY -->
+  <div id="login-modal" class="modal">
+    <div class="login-box">
+      <div class="logo-lg"></div>
+      <h2>Smart Restaurant System</h2>
+      <form id="login-form">
+        <label>Username
+          <input type="text" id="login-user" value="admin" required />
+        </label>
+        <label>Password
+          <input type="password" id="login-pass" value="admin123" required />
+        </label>
+        <button type="submit" class="btn-primary full">Login to Dashboard</button>
+      </form>
+      <div class="demo-creds">
+        <span>Demo Roles &amp; Permissions:</span>
+        <div style="margin-top:4px;"><code>admin / admin123</code> — <strong>ADMIN</strong> (Full 24 Features)</div>
+        <div><code>staff / staff123</code> — <strong>STAFF</strong> (Menu, Orders, Recipes, Reports)</div>
+        <div><code>stock / stock123</code> — <strong>STOCK_FILLER</strong> (Inventory &amp; FEFO, Batches, Reports)</div>
+      </div>
+      <p id="login-err" class="err-msg hidden"></p>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">Inventory</div>
+      <div>
+        <h1>Smart Restaurant Inventory System</h1>
+        <span id="user-badge">Role: ADMIN</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-view="overview">Overview</button>
+      <button class="nav-btn" data-view="menu">Food Menu</button>
+      <button class="nav-btn" data-view="orders">Orders (Queue)</button>
+      <button class="nav-btn" data-view="recipes">Recipes &amp; Demand</button>
+      <button class="nav-btn" data-view="inventory">Inventory &amp; FEFO</button>
+      <button class="nav-btn" data-view="reports">Reports (24 Features)</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div><span class="dot"></span> <span id="conn-mode">Connecting...</span></div>
+      <button class="btn-secondary btn-sm" id="logout-btn">Switch User</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h2 id="page-title">Overview</h2>
+        <p id="page-sub"></p>
+      </div>
+      <div class="top-actions">
+        <span class="date-pill" id="today-label">Today: 20261118</span>
+        <button class="btn-secondary" id="refresh-btn">Refresh</button>
+        <button class="btn-secondary" id="load-data-btn" title="Feature 24: Reload data directly from data/*.txt files">🔄 Reload from Files</button>
+        <button class="btn-primary" id="save-data-folder-btn" title="Feature 23: Save website changes into data/*.txt files">📁 Save to data/ Folder</button>
+        <button class="btn-secondary" id="save-txt-btn" title="Download formatted summary report">💾 Export Summary</button>
+      </div>
+    </header>
+
+    <div id="alert" class="alert hidden"></div>
+
+    <!-- VIEW: OVERVIEW -->
+    <section id="view-overview" class="view">
+      <div class="stats-grid">
+        <div class="card">
+          <span>Menu Dishes</span>
+          <strong id="stat-foods">0</strong>
+          <small>Sorted IDs · Binary Search</small>
+        </div>
+        <div class="card">
+          <span>Pending Queue</span>
+          <strong id="stat-pending">0</strong>
+          <small>Circular Queue (FIFO)</small>
+        </div>
+        <div class="card">
+          <span>Expiring / Expired</span>
+          <strong id="stat-expiring" class="warn">0</strong>
+          <small>Strict Safety Check</small>
+        </div>
+        <div class="card">
+          <span>Confirmed Sales</span>
+          <strong id="stat-sales" class="good">Rs. 0</strong>
+          <small>Revenue Tracked</small>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Expiring &amp; Expired Batch Alerts</h3>
+            <p class="muted" style="margin-bottom:0;">Batches expired or expiring within 7 days. Expired stock is strictly prohibited from order confirmation.</p>
+          </div>
+          <button class="btn-danger btn-sm" id="quick-expire-btn">Write Off Expired Now</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Batch ID</th><th>Ingredient ID</th><th>Ingredient Name</th><th>Qty</th><th>Expiry (YYYYMMDD)</th><th>Status</th></tr>
+          </thead>
+          <tbody id="overview-batches"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VIEW: MENU -->
+    <section id="view-menu" class="view hidden">
+      <div class="two-col" id="menu-layout">
+        <div class="panel" id="add-food-panel">
+          <h3>Add Food Item (Feature 2)</h3>
+          <p class="muted">Add a new dish to the menu. Dishes are automatically maintained sorted by ID for O(log n) binary search.</p>
+          <form id="add-food-form" class="form-stack">
+            <label>Food ID <input type="number" id="f-id" value="31" required /></label>
+            <label>Food Name (use _ for space) <input type="text" id="f-name" placeholder="Veg_Pulao" required /></label>
+            <label>Price (Rs.) <input type="number" id="f-price" value="180" required /></label>
+            <button type="submit" class="btn-primary">Add to Sorted Menu</button>
+          </form>
+
+          <div class="divider"></div>
+
+          <h3>Update Food Item (Feature 3 - Admin)</h3>
+          <p class="muted">Update the name or price of an existing dish.</p>
+          <form id="update-food-form" class="form-stack">
+            <label>Select Dish
+              <select id="u-food-id" required></select>
+            </label>
+            <label>New Name (use _ for space) <input type="text" id="u-food-name" required /></label>
+            <label>New Price (Rs.) <input type="number" id="u-food-price" required /></label>
+            <button type="submit" class="btn-secondary">Update Dish</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Menu List (Feature 1: Sorted by ID for Binary Search)</h3>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Food Name</th><th>Price</th><th>Action</th></tr>
+            </thead>
+            <tbody id="menu-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: ORDERS -->
+    <section id="view-orders" class="view hidden">
+      <div class="two-col">
+        <div class="panel">
+          <h3>Place Customer Order (Feature 4)</h3>
+          <p class="muted">Take orders directly from this screen. Supports single dishes or multi-item tickets enqueued into the FIFO Circular Queue.</p>
+          <form id="order-form" class="form-stack">
+            <label>Select Dish
+              <select id="order-food-select" required></select>
+            </label>
+            <label>Quantity
+              <input type="number" id="order-food-qty" min="1" max="50" value="1" required />
+            </label>
+            <div class="date-pill" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="color:#9ca3af; font-size:12px;">Item Subtotal:</span>
+              <strong id="order-item-subtotal" class="good">Rs. 0</strong>
+            </div>
+            <div class="btn-row">
+              <button type="button" id="order-add-item-btn" class="btn-secondary" style="flex:1;">+ Add to Ticket</button>
+              <button type="submit" id="order-direct-submit-btn" class="btn-primary" style="flex:1;">Place Order</button>
+            </div>
+
+            <!-- Current Multi-Item Ticket Section -->
+            <div id="order-ticket-section" class="hidden" style="margin-top:10px;">
+              <div class="divider"></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:13px; font-weight:600; color:#fbbf24;">Current Order Ticket:</span>
+                <strong id="order-ticket-total" class="good">Rs. 0</strong>
+              </div>
+              <div id="order-ticket-items" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
+              <button type="button" id="order-submit-ticket-btn" class="btn-primary full">Confirm &amp; Place Ticket (FIFO)</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>Customer Orders Queue (Feature 5: Circular FIFO Queue)</h3>
+              <p class="muted" style="margin-bottom:0;">Order confirmations strictly verify that all ingredients have sufficient UNEXPIRED stock.</p>
+            </div>
+            <button class="btn-primary" id="confirm-next-btn">Confirm Next Order (Feature 6: FIFO Pop)</button>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Order ID</th><th>Date</th><th>Items</th><th>Amount</th><th>Status</th><th>Actions (Features 7 &amp; 8)</th></tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: RECIPES & DEMAND -->
+    <section id="view-recipes" class="view hidden">
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <h3>Add Recipe Ingredient (Feature 10)</h3>
+            <p class="muted">Map ingredient quantity needed to prepare one portion of a dish.</p>
+            <form id="add-recipe-form" class="form-stack">
+              <label>Select Dish
+                <select id="r-fid-select" required></select>
+              </label>
+              <label>Select Ingredient
+                <select id="r-gid-select" required></select>
+              </label>
+              <label>Quantity per Serving
+                <input type="number" id="r-qty" value="150" min="1" required />
+              </label>
+              <button type="submit" class="btn-primary">Save Recipe Ingredient</button>
+            </form>
+          </div>
+
+          <div class="panel" id="delete-recipe-panel">
+            <h3>Delete Complete Recipe (Feature 11 - Admin)</h3>
+            <p class="muted">Removes all recipe ingredients mapped to the selected dish.</p>
+            <form id="delete-recipe-form" class="form-stack">
+              <label>Select Dish Recipe
+                <select id="del-r-fid-select" required></select>
+              </label>
+              <button type="submit" class="btn-danger">Delete Dish Recipe</button>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h3>Ingredient Demand (Feature 12: Hash Table)</h3>
+            <p class="muted">Total ingredient quantity required for all CONFIRMED &amp; PENDING orders vs usable stock.</p>
+            <table>
+              <thead>
+                <tr><th>Ingredient</th><th>Demand</th><th>Usable Stock</th><th>Status</th></tr>
+              </thead>
+              <tbody id="demand-body"></tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h3>Average Daily Demand Forecast (Feature 13)</h3>
+            <p class="muted">Forecasting average ingredient consumption per day across confirmed sales history.</p>
+            <table>
+              <thead>
+                <tr><th>Ingredient</th><th>Avg Daily Demand</th><th>Current Usable</th><th>Coverage</th></tr>
+              </thead>
+              <tbody id="daily-demand-body"></tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h3>Complete Recipe Book (Feature 9: Show Recipes)</h3>
+            <p class="muted">Listing of all dish recipes and required ingredients.</p>
+            <table>
+              <thead>
+                <tr><th>Dish ID</th><th>Dish Name</th><th>Ingredients per Serving</th></tr>
+              </thead>
+              <tbody id="recipes-book-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: INVENTORY & FEFO -->
+    <section id="view-inventory" class="view hidden">
+      <div class="four-col" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:20px;">
+        <div class="panel" id="add-ing-panel">
+          <h3>Add Ingredient (Feature 15)</h3>
+          <form id="add-ing-form" class="form-stack">
+            <label>ID <input type="number" id="ing-id" value="31" required /></label>
+            <label>Name <input type="text" id="ing-name" placeholder="Paneer" required /></label>
+            <label>Unit <input type="text" id="ing-unit" value="g" required /></label>
+            <label>Min Stock <input type="number" id="ing-min" value="1000" required /></label>
+            <label>Cost/Unit (Rs.) <input type="number" id="ing-cost" value="120" required /></label>
+            <button type="submit" class="btn-primary">Add Ingredient</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Receive Batch (Feature 16)</h3>
+          <form id="receive-form" class="form-stack">
+            <label>Batch ID <input type="number" id="b-id" value="133" required /></label>
+            <label>Ingredient
+              <select id="b-gid-select" required></select>
+            </label>
+            <label>Quantity <input type="number" id="b-qty" value="1000" required /></label>
+            <label>Expiry (YYYYMMDD) <input type="number" id="b-exp" value="20270630" required /></label>
+            <button type="submit" class="btn-primary">Receive Batch (Undo Stack)</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Use Stock (Feature 18: FEFO)</h3>
+          <form id="use-form" class="form-stack">
+            <label>Ingredient
+              <select id="u-gid-select" required></select>
+            </label>
+            <label>Quantity to Use <input type="number" id="u-qty" value="500" required /></label>
+            <button type="submit" class="btn-primary">Use Earliest Expiry First</button>
+          </form>
+          <div class="divider"></div>
+          <div class="btn-row">
+            <button id="expire-btn" class="btn-danger" title="Feature 20: Write off expired stock">Write Off Expired (F20)</button>
+            <button id="undo-btn" class="btn-secondary" title="Feature 21: Undo last receipt via LIFO stack">Undo Last Receipt (F21)</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Log Wastage (Feature 19)</h3>
+          <form id="waste-form" class="form-stack">
+            <label>Ingredient
+              <select id="w-gid-select" required></select>
+            </label>
+            <label>Wasted Qty <input type="number" id="w-qty" value="100" required /></label>
+            <label>Reason <input type="text" id="w-note" value="Spoiled" required /></label>
+            <button type="submit" class="btn-danger">Record Wastage</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <h3>Usable Ingredient Stock (Feature 14: Show Stock)</h3>
+          <p class="muted">Live unexpired usable inventory levels with low stock alerts.</p>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Ingredient</th><th>Usable Stock</th><th>Min Stock</th><th>Cost/Unit</th><th>Status</th></tr>
+            </thead>
+            <tbody id="ing-body"></tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3>All Stock Batches (Feature 17: Show Batches - FEFO Heap)</h3>
+          <p class="muted">Individual ingredient batches tracked by expiry date.</p>
+          <table>
+            <thead>
+              <tr><th>Batch ID</th><th>Ingredient</th><th>Qty</th><th>Expiry</th><th>Condition</th></tr>
+            </thead>
+            <tbody id="all-batches-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: REPORTS & DSA MAP -->
+    <section id="view-reports" class="view hidden">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Console Features 22, 23 &amp; 24: Comprehensive Reports &amp; File Persistence</h3>
+            <p class="muted" style="margin-bottom:0;">All 6 console report modules and 2-way disk file persistence.</p>
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" id="save-data-folder-report-btn">📁 Feature 23: Save to data/*.txt Files</button>
+            <button class="btn-secondary" id="load-data-report-btn">🔄 Feature 24: Reload from data/*.txt Files</button>
+            <button class="btn-secondary" id="export-reports-btn">💾 Export Full Report (.txt)</button>
+          </div>
+        </div>
+
+        <!-- 6 Report Sub-Tabs -->
+        <div class="tab-row" id="report-tabs">
+          <button class="tab-btn active" data-report="sales-per-food">Report 2: Sales Per Food (Merge Sort)</button>
+          <button class="tab-btn" data-report="sales-per-day">Report 1: Daily Sales Report</button>
+          <button class="tab-btn" data-report="stock-value">Report 3: Stock Value Valuation</button>
+          <button class="tab-btn" data-report="expiry-report">Report 4: Expiry Tracking Report</button>
+          <button class="tab-btn" data-report="low-stock-report">Report 5: Low Stock Alert Report</button>
+          <button class="tab-btn" data-report="wastage-report">Report 6: Wastage &amp; Loss Report</button>
+        </div>
+      </div>
+
+      <!-- Report Section 1: Sales Per Food -->
+      <div id="rep-sec-sales-per-food" class="panel report-sec">
+        <h3>Sales Per Food (Feature 22.2: Manual Merge Sort by Revenue)</h3>
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Dish Name</th><th>Plates Sold</th><th>Total Revenue (Rs.)</th></tr>
+          </thead>
+          <tbody id="sales-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Report Section 2: Daily Sales -->
+      <div id="rep-sec-sales-per-day" class="panel report-sec hidden">
+        <div class="panel-head">
+          <div>
+            <h3>Daily Sales Report (Feature 22.1)</h3>
+            <p class="muted">Check confirmed revenue and sales breakdown for any specific day.</p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label style="flex-direction:row; align-items:center; gap:6px;">Date (YYYYMMDD):
+              <input type="number" id="daily-rep-date" value="20261114" style="width:130px;" />
+            </label>
+            <button class="btn-primary btn-sm" id="daily-rep-btn">Run Report</button>
+          </div>
+        </div>
+        <div id="daily-rep-result" class="alert ok" style="margin-bottom:12px;">Sales on 20261114 = Rs. 820</div>
+        <table>
+          <thead>
+            <tr><th>Order ID</th><th>Date</th><th>Dishes Ordered</th><th>Amount</th></tr>
+          </thead>
+          <tbody id="daily-rep-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Report Section 3: Stock Value -->
+      <div id="rep-sec-stock-value" class="panel report-sec hidden">
+        <div class="panel-head">
+          <div>
+            <h3>Stock Valuation Report (Feature 22.3)</h3>
+            <p class="muted">Total value of all usable and on-hand inventory calculated as (quantity × cost per unit).</p>
+          </div>
+          <div class="date-pill">
+            <span>Total Stock Value: </span>
+            <strong id="rep-stock-total-value" class="good">Rs. 0</strong>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Ingredient</th><th>Total Qty</th><th>Usable Qty</th><th>Cost/Unit</th><th>Total Value (Rs.)</th></tr>
+          </thead>
+          <tbody id="stock-val-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Report Section 4: Expiry Report -->
+      <div id="rep-sec-expiry-report" class="panel report-sec hidden">
+        <h3>Batch Expiry Report (Feature 22.4)</h3>
+        <p class="muted">All batches currently EXPIRED or expiring in the next 7 days.</p>
+        <table>
+          <thead>
+            <tr><th>Batch ID</th><th>Ingredient ID</th><th>Ingredient Name</th><th>Quantity</th><th>Expiry Date</th><th>Condition</th></tr>
+          </thead>
+          <tbody id="rep-expiry-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Report Section 5: Low Stock Report -->
+      <div id="rep-sec-low-stock-report" class="panel report-sec hidden">
+        <h3>Low Stock Threshold Alert Report (Feature 22.5)</h3>
+        <p class="muted">Ingredients currently below minimum safety stock levels requiring immediate replenishment.</p>
+        <table>
+          <thead>
+            <tr><th>Ingredient ID</th><th>Ingredient Name</th><th>Current Usable</th><th>Minimum Threshold</th><th>Reorder Deficit</th><th>Status</th></tr>
+          </thead>
+          <tbody id="rep-low-stock-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Report Section 6: Wastage Report -->
+      <div id="rep-sec-wastage-report" class="panel report-sec hidden">
+        <div class="panel-head">
+          <div>
+            <h3>Wastage &amp; Stock Transaction Log (Feature 22.6)</h3>
+            <p class="muted">Full audit log of stock receipts, FEFO usages, and spoiled/wasted ingredients.</p>
+          </div>
+          <div class="date-pill">
+            <span>Total Logged Wastage: </span>
+            <strong id="rep-wastage-total" class="warn">0 units</strong>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Transaction Type</th><th>Ingredient ID</th><th>Ingredient</th><th>Quantity</th><th>Date</th><th>Reason / Note</th></tr>
+          </thead>
+          <tbody id="txn-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
