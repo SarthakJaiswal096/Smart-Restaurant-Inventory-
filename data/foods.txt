@@ -1,8 +1,0 @@
-1|Paneer_Tikka|240
-2|Chicken_Biryani|320
-3|Dal_Makhani|190
-4|Butter_Naan|45
-5|Masala_Dosa|140
-6|Shahi_Paneer|250
-7|khadhi_Paneer|250
-8|malai_dal|250
