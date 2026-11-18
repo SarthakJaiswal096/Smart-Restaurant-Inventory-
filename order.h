@@ -1,0 +1,241 @@
+#ifndef ORDER_H
+#define ORDER_H
+
+#include "models.h"
+#include "recipe.h"
+#include "inventory.h"
+
+class OrderCircularQueue
+{
+private:
+    int data[200];
+    int front, rear, count;
+
+public:
+    OrderCircularQueue() { 
+        front = rear = count = 0; 
+    }
+    bool empty() { 
+        return count == 0; 
+    }
+    int size() { 
+        return count;
+    }
+    void clear() { 
+        front = rear = count = 0; 
+    }
+
+    void push(int orderId)
+    {
+        if (count == 200) return;
+        data[rear] = orderId;
+        rear = (rear + 1) % 200;
+        count++;
+    }
+
+    int pop()
+    {
+        if (empty()) return -1;
+        int val = data[front];
+        front = (front + 1) % 200;
+        count--;
+        return val;
+    }
+};
+
+class OrderManager
+{
+private:
+    vector<Order> orders;
+    OrderCircularQueue queue;
+    int nextId;
+
+    // Calculates total ingredients for the order and consumes them in FIFO order
+    bool consumeOrderFIFO(Order& o, RecipeBook& recipes, Inventory& inv, int today, string& errorMsg)
+    {
+        DemandHashTable need;
+        vector<OrderLine>& lines = o.getItems();
+        vector<RecipeItem>& recs = recipes.getRecipes();
+
+        if (lines.empty())
+        {
+            errorMsg = "Order has no food items";
+            return false;
+        }
+
+        // Verify all dishes have recipes defined
+        for (int i = 0; i < (int)lines.size(); i++)
+        {
+            bool dishHasRecipe = false;
+            for (int k = 0; k < (int)recs.size(); k++)
+            {
+                if (recs[k].foodId == lines[i].foodId)
+                {
+                    dishHasRecipe = true;
+                    need.add(recs[k].ingredientId, recs[k].quantity * lines[i].quantity);
+                }
+            }
+            if (!dishHasRecipe)
+            {
+                errorMsg = "Food ID " + to_string(lines[i].foodId) + " has no recipe ingredients defined";
+                cout << "Cannot confirm: " << errorMsg << ".\n";
+                return false;
+            }
+        }
+
+        vector<Ingredient>& ings = inv.getIngredients();
+        // Step 1: Verify ALL ingredients have enough non-expired usable stock before deducting anything
+        for (int i = 0; i < (int)ings.size(); i++)
+        {
+            int id = ings[i].getId();
+            int req = need.get(id);
+            if (req > 0)
+            {
+                int usable = inv.getUsableStock(id, today);
+                int total = inv.getStock(id);
+                if (usable < req)
+                {
+                    if (total >= req)
+                    {
+                        errorMsg = "Ingredient '" + ings[i].getName() + "' is EXPIRED! Expired batches cannot be used to prepare food";
+                    }
+                    else
+                    {
+                        errorMsg = "Not enough usable " + ings[i].getName() + " (Required: " + to_string(req) + " " + ings[i].getUnit() + ", Usable unexpired: " + to_string(usable) + " " + ings[i].getUnit() + ")";
+                    }
+                    cout << "Cannot confirm: " << errorMsg << ".\n";
+                    return false;
+                }
+            }
+        }
+
+        // Step 2: Deduct each ingredient in FIFO order from unexpired batches
+        for (int i = 0; i < (int)ings.size(); i++)
+        {
+            int id = ings[i].getId();
+            int req = need.get(id);
+            if (req > 0) inv.useStockFIFO(id, req, today);
+        }
+        return true;
+    }
+
+    bool consumeOrderFIFO(Order& o, RecipeBook& recipes, Inventory& inv, int today)
+    {
+        string dummy;
+        return consumeOrderFIFO(o, recipes, inv, today, dummy);
+    }
+
+public:
+    OrderManager() { 
+        nextId = 1001;
+    }
+
+    int placeOrder(vector<OrderLine>& items, int today)
+    {
+        Order o(nextId, today);
+        for (int i = 0; i < (int)items.size(); i++)
+            o.addFood(items[i].foodId, items[i].quantity);
+        orders.push_back(o);
+        queue.push(nextId);
+        return nextId++;
+    }
+
+    int confirmNext(RecipeBook& recipes, Inventory& inv, int today, string& errorMsg)
+    {
+        while (!queue.empty())
+        {
+            int id = queue.pop();
+            for (int i = 0; i < (int)orders.size(); i++)
+            {
+                if (orders[i].getId() == id && orders[i].getStatus() == "PENDING")
+                {
+                    if (!consumeOrderFIFO(orders[i], recipes, inv, today, errorMsg))
+                    {
+                        queue.push(id); // Keep in queue if stock is short or expired
+                        return -1;
+                    }
+                    orders[i].setStatus("CONFIRMED");
+                    cout << "Order " << id << " confirmed and stock deducted (FIFO).\n";
+                    return id;
+                }
+            }
+        }
+        errorMsg = "No pending orders in queue";
+        cout << errorMsg << ".\n";
+        return -1;
+    }
+
+    int confirmNext(RecipeBook& recipes, Inventory& inv, int today)
+    {
+        string dummy;
+        return confirmNext(recipes, inv, today, dummy);
+    }
+
+    bool confirmOrder(int id, RecipeBook& recipes, Inventory& inv, int today, string& errorMsg)
+    {
+        for (int i = 0; i < (int)orders.size(); i++)
+        {
+            if (orders[i].getId() == id && orders[i].getStatus() == "PENDING")
+            {
+                if (!consumeOrderFIFO(orders[i], recipes, inv, today, errorMsg)) return false;
+                orders[i].setStatus("CONFIRMED");
+                cout << "Order confirmed and stock deducted (FIFO).\n";
+                return true;
+            }
+        }
+        errorMsg = "Pending order #" + to_string(id) + " not found";
+        cout << errorMsg << ".\n";
+        return false;
+    }
+
+    bool confirmOrder(int id, RecipeBook& recipes, Inventory& inv, int today)
+    {
+        string dummy;
+        return confirmOrder(id, recipes, inv, today, dummy);
+    }
+
+    bool cancelOrder(int id)
+    {
+        for (int i = 0; i < (int)orders.size(); i++)
+        {
+            if (orders[i].getId() == id && orders[i].getStatus() == "PENDING")
+            {
+                orders[i].setStatus("CANCELLED");
+                cout << "Order cancelled.\n";
+                return true;
+            }
+        }
+        cout << "Only pending orders can be cancelled.\n";
+        return false;
+    }
+
+    void showOrders()
+    {
+        cout << "\n----- ORDERS -----\n";
+        for (int i = 0; i < (int)orders.size(); i++)
+        {
+            cout << "Order " << orders[i].getId() << " | " << orders[i].getStatus()<< " | " << orders[i].getDate() << "\n";
+            vector<OrderLine>& lines = orders[i].getItems();
+            for (int j = 0; j < (int)lines.size(); j++)
+                cout << "    Food " << lines[j].foodId << " x " << lines[j].quantity << "\n";
+        }
+    }
+
+    vector<Order>& getOrders() { 
+        return orders;
+    }
+
+    void setOrders(vector<Order>& list)
+    {
+        orders = list;
+        queue.clear();
+        nextId = 1001;
+        for (int i = 0; i < (int)orders.size(); i++)
+        {
+            if (orders[i].getId() >= nextId) nextId = orders[i].getId() + 1;
+            if (orders[i].getStatus() == "PENDING") queue.push(orders[i].getId());
+        }
+    }
+};
+
+#endif
